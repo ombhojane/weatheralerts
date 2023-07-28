@@ -55,6 +55,20 @@ weather_icons = {
     "Tornado": "🌪️"
 }
 
+# Function to fetch nearby cities based on geolocation
+def fetch_nearby_cities(latitude, longitude, num_cities=5):
+    geolocator = Nominatim(user_agent="weather_app")
+    location = geolocator.reverse((latitude, longitude), exactly_one=False)
+    nearby_cities = []
+    for loc in location:
+        address = loc.raw.get('address', {})
+        city = address.get('city', '')
+        if city:
+            nearby_cities.append(city)
+        if len(nearby_cities) >= num_cities:
+            break
+    return nearby_cities
+
 # Main app
 def main():
     st.title("Weather Forecast App with OpenWeatherMap API")
@@ -62,9 +76,6 @@ def main():
     # Create a connection to OpenWeatherMap API
     connection = OpenWeatherMapConnection(api_key)
 
-    # Initialize location variable
-    location = None
-    
     # Geolocation support
     if st.button("Get Weather Forecast based on My Location"):
         try:
@@ -78,6 +89,9 @@ def main():
             if geolocation:
                 latitude, longitude = geolocation.latitude, geolocation.longitude
                 location = f"{latitude}, {longitude}"
+                nearby_cities = fetch_nearby_cities(latitude, longitude)
+                st.write("Nearby Cities:")
+                st.write(', '.join(nearby_cities))
             else:
                 st.warning("Geolocation not available. Please manually enter a location.")
                 return
