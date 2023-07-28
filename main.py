@@ -61,56 +61,53 @@ def main():
     # Create a connection to OpenWeatherMap API
     connection = OpenWeatherMapConnection(api_key)
     
-    # Input field for location
-    location = st.text_input("Enter a location (e.g., city name or latitude/longitude):")
-    
     # Geolocation support
     if st.button("Get Weather Forecast based on My Location"):
-        geolocation = st.experimental_get_query_params()
-        if geolocation:
-            latitude = geolocation["latitude"][0]
-            longitude = geolocation["longitude"][0]
+        try:
+            latitude, longitude = st.geolocation()
             location = f"{latitude}, {longitude}"
-        else:
+        except:
             st.warning("Geolocation not available. Please manually enter a location.")
             return
+
+    # Input field for location
+    location_input = st.text_input("Enter a location (e.g., city name or latitude/longitude):")
     
-    # Input field for date (optional, for future expansion)
-    # date = st.date_input("Select a date:")
-    
-    if st.button("Get Weather Forecast"):
-        if location:
-            # Fetch weather data
-            weather_data = connection.get_weather_data(location)
+    if st.button("Get Weather Forecast") and (location or location_input):
+        # Use the manually entered location if available, otherwise use geolocation
+        location = location_input if location_input else location
+
+        # Fetch weather data
+        weather_data = connection.get_weather_data(location)
+        
+        if weather_data:
+            # Display weather information
+            st.write(f"Location: {weather_data['name']}")
+            st.write(f"Temperature: {weather_data['main']['temp']}°C")
+            st.write(f"Humidity: {weather_data['main']['humidity']}%")
+            st.write(f"Wind Speed: {weather_data['wind']['speed']} m/s")
+            weather_condition = weather_data['weather'][0]['description']
+            st.write(f"Weather Conditions: {weather_condition}")
             
-            if weather_data:
-                # Display weather information
-                st.write(f"Location: {weather_data['name']}")
-                st.write(f"Temperature: {weather_data['main']['temp']}°C")
-                st.write(f"Humidity: {weather_data['main']['humidity']}%")
-                st.write(f"Wind Speed: {weather_data['wind']['speed']} m/s")
-                weather_condition = weather_data['weather'][0]['description']
-                st.write(f"Weather Conditions: {weather_condition}")
-                
-                # Weather Icons
-                weather_icon = weather_icons.get(weather_condition, "🌫️")
-                st.write(weather_icon)
+            # Weather Icons
+            weather_icon = weather_icons.get(weather_condition, "🌫️")
+            st.write(weather_icon)
 
-                st.subheader("Forecasting Time: A Tale of the Past, Present, and Future!")
-                weather_data_list = fetch_weather_data_range(location, days=9)
-                df = pd.DataFrame()
-                for i, data in enumerate(weather_data_list):
-                    date = datetime.strptime(data['date'], "%Y-%m-%d")
-                    weekday = date.strftime("%A")
-                    weather = data['weather'][0]['description']
-                    weather_icon = weather_icons.get(weather, "🌫️")
-                    temperature = data['main']['temp']
-                    df[f"{weekday}"] = [weather_icon, temperature]
+            st.subheader("Forecasting Time: A Tale of the Past, Present, and Future!")
+            weather_data_list = fetch_weather_data_range(location, days=9)
+            df = pd.DataFrame()
+            for i, data in enumerate(weather_data_list):
+                date = datetime.strptime(data['date'], "%Y-%m-%d")
+                weekday = date.strftime("%A")
+                weather = data['weather'][0]['description']
+                weather_icon = weather_icons.get(weather, "🌫️")
+                temperature = data['main']['temp']
+                df[f"{weekday}"] = [weather_icon, temperature]
 
-                st.dataframe(df)
+            st.dataframe(df)
 
-            else:
-                st.warning("No weather data found for the given location.")
+        else:
+            st.warning("No weather data found for the given location.")
 
 if __name__ == "__main__":
     main()
