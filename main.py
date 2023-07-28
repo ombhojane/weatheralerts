@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 from datetime import datetime, timedelta
 import pandas as pd
+from geopy.geocoders import Nominatim
 
 # OpenWeatherMap API key (replace 'your_api_key' with your actual API key)
 api_key = 'bb34b4f6362247530f4b2091d0a18a9e'
@@ -60,12 +61,26 @@ def main():
     
     # Create a connection to OpenWeatherMap API
     connection = OpenWeatherMapConnection(api_key)
+
+    # Initialize location variable
+    location = None
     
     # Geolocation support
     if st.button("Get Weather Forecast based on My Location"):
         try:
-            latitude, longitude = st.geolocation()
-            location = f"{latitude}, {longitude}"
+            geolocator = Nominatim(user_agent="weather_app")
+            location_name = st.session_state.location_name
+            if not location_name:
+                location_name = st.text_input("Enter your location:")
+                st.session_state.location_name = location_name
+
+            geolocation = geolocator.geocode(location_name)
+            if geolocation:
+                latitude, longitude = geolocation.latitude, geolocation.longitude
+                location = f"{latitude}, {longitude}"
+            else:
+                st.warning("Geolocation not available. Please manually enter a location.")
+                return
         except:
             st.warning("Geolocation not available. Please manually enter a location.")
             return
