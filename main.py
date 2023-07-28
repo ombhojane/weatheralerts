@@ -64,6 +64,17 @@ def main():
     # Input field for location
     location = st.text_input("Enter a location (e.g., city name or latitude/longitude):")
     
+    # Geolocation support
+    if st.button("Get Weather Forecast based on My Location"):
+        geolocation = st.experimental_get_query_params()
+        if geolocation:
+            latitude = geolocation["latitude"][0]
+            longitude = geolocation["longitude"][0]
+            location = f"{latitude}, {longitude}"
+        else:
+            st.warning("Geolocation not available. Please manually enter a location.")
+            return
+    
     # Input field for date (optional, for future expansion)
     # date = st.date_input("Select a date:")
     
