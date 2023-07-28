@@ -1,6 +1,5 @@
 import streamlit as st
 import requests
-import emoji
 from datetime import datetime, timedelta
 import pandas as pd
 
@@ -36,6 +35,25 @@ def fetch_weather_data_range(location, days):
             weather_data_list.append(weather_data)
     return weather_data_list
 
+# Weather Icons mapping
+weather_icons = {
+    "Clear": "☀️",
+    "Clouds": "☁️",
+    "Drizzle": "🌧️",
+    "Rain": "🌧️",
+    "Thunderstorm": "⛈️",
+    "Snow": "❄️",
+    "Mist": "🌫️",
+    "Smoke": "🌫️",
+    "Haze": "🌫️",
+    "Dust": "🌫️",
+    "Fog": "🌫️",
+    "Sand": "🌫️",
+    "Ash": "🌫️",
+    "Squall": "🌫️",
+    "Tornado": "🌪️"
+}
+
 # Main app
 def main():
     st.title("Weather Forecast App with OpenWeatherMap API")
@@ -62,24 +80,19 @@ def main():
                 st.write(f"Wind Speed: {weather_data['wind']['speed']} m/s")
                 weather_condition = weather_data['weather'][0]['description']
                 st.write(f"Weather Conditions: {weather_condition}")
+                
                 # Weather Icons
-                if 'clear' in weather_condition.lower():
-                    st.write(emoji.emojize(":sunny:"))
-                elif 'cloud' in weather_condition.lower():
-                    st.write(emoji.emojize(":cloud:"))
-                elif 'rain' in weather_condition.lower():
-                    st.write(emoji.emojize(":cloud_with_rain:"))
-                else:
-                    st.write(emoji.emojize(":question:"))
+                weather_icon = weather_icons.get(weather_condition, "🌫️")
+                st.write(weather_icon)
 
-                st.subheader("Weather Forecast for the Previous 4 Days, Today, and Next 4 Days")
+                st.subheader("Forecasting Time: A Tale of the Past, Present, and Future!")
                 weather_data_list = fetch_weather_data_range(location, days=9)
                 df = pd.DataFrame()
                 for i, data in enumerate(weather_data_list):
                     date = datetime.strptime(data['date'], "%Y-%m-%d")
                     weekday = date.strftime("%A")
                     weather = data['weather'][0]['description']
-                    weather_icon = get_weather_icon(weather)
+                    weather_icon = weather_icons.get(weather, "🌫️")
                     temperature = data['main']['temp']
                     df[f"{weekday}"] = [weather_icon, temperature]
 
@@ -87,16 +100,6 @@ def main():
 
             else:
                 st.warning("No weather data found for the given location.")
-
-def get_weather_icon(weather_condition):
-    if 'clear' in weather_condition.lower():
-        return emoji.emojize(":sunny:")
-    elif 'cloud' in weather_condition.lower():
-        return emoji.emojize(":cloud:")
-    elif 'rain' in weather_condition.lower():
-        return emoji.emojize(":cloud_with_rain:")
-    else:
-        return emoji.emojize(":question:")
 
 if __name__ == "__main__":
     main()
