@@ -2,12 +2,18 @@ import streamlit as st
 import requests
 from datetime import datetime, timedelta
 import pandas as pd
-
+from dotenv import load_dotenv
+import os
 
 # OpenWeatherMap API key (replace 'your_api_key' with your actual API key)
-api_key = 'your_api_key'
+api_key = os.getenv('weather')
 
-news_api_key = 'your_api_key'
+# NewsAPI key (replace 'your_news_api_key' with your actual NewsAPI key)
+news_api_key = os.getenv('news')
+
+# Load environment variables
+def configure():
+    load_dotenv()
 
 # Custom OpenWeatherMap connection class
 class OpenWeatherMapConnection:
@@ -111,13 +117,15 @@ def fetch_weather_news(location):
 
 # Main app
 def main():
+    configure()
     st.title("Weather Forecast App with OpenWeatherMap API")
     
     # Create a connection to OpenWeatherMap API
     connection = OpenWeatherMapConnection(api_key)
     
     # Input field for location
-    location = st.text_input("Enter a location (e.g., city name or latitude/longitude):")
+    location = st.text_input("Enter a location (e.g., City name, Country name):",
+                                   help="Example: Mumbai, India or New York, USA")
     
     # Input field for date (optional, for future expansion)
     # date = st.date_input("Select a date:")
