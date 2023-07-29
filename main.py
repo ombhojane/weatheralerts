@@ -1,29 +1,10 @@
-import secrets
 import streamlit as st
 import requests
-from datetime import datetime, timedelta
 import pandas as pd
 
-# api keys
+# Define your API keys directly (replace 'YOUR_OPENWEATHERMAP_API_KEY' and 'YOUR_NEWS_API_KEY' with your actual API keys)
 api_key = st.secrets.weather
 news_api_key = st.secrets.news
-
-# OpenWeatherMap connection
-class OpenWeatherMapConnection:
-    def __init__(self, api_key):
-        self.api_key = api_key
-        self.base_url = "https://api.openweathermap.org/data/2.5/weather"
-    
-    def get_weather_data(self, location):
-        try:
-            params = {"q": location, "appid": self.api_key, "units": "metric"}
-            response = requests.get(self.base_url, params=params)
-            data = response.json()
-            return data
-        except requests.exceptions.RequestException as e:
-            st.error("Error: Unable to connect to the OpenWeatherMap API.")
-            return None
-
 
 # Weather Icons mapping
 weather_icons = {
@@ -44,11 +25,43 @@ weather_icons = {
     "Tornado": "🌪️"
 }
 
+# OpenWeatherMap connection
+class OpenWeatherMapConnection:
+    def __init__(self, api_key):
+        self.api_key = api_key
+        self.base_url = "https://api.openweathermap.org/data/2.5/weather"
+        self._connection = None
+
+    def _connect(self):
+        if not self._connection:
+            self._connection = requests.Session()
+        return self._connection
+
+    def _disconnect(self):
+        if self._connection:
+            self._connection.close()
+            self._connection = None
+
+    def get_weather_data(self, location):
+        try:
+            params = {"q": location, "appid": self.api_key, "units": "metric"}
+            response = self._connect().get(self.base_url, params=params)
+            data = response.json()
+            return data
+        except requests.exceptions.RequestException as e:
+            st.error("Error: Unable to connect to the OpenWeatherMap API.")
+            return None
+
+    def cursor(self):
+        return self._connect()
+
 # to fetch weather-related news
+@st.cache_data(ttl=3600)  # Cache data for 1 hour (3600 seconds)
 def fetch_weather_news(location):
     try:
         # Set the news query based on the location and weather conditions
-        weather_data = OpenWeatherMapConnection(api_key).get_weather_data(location)
+        connection = OpenWeatherMapConnection(api_key)
+        weather_data = connection.get_weather_data(location)
         weather_condition = weather_data['weather'][0]['main']
 
         # Use more general terms related to weather or natural disasters
@@ -69,7 +82,6 @@ def fetch_weather_news(location):
                 url = article['url']
                 news.append([title, description, url])
             return news
-
         else:
             # If specific weather-related news is not available for the given location,
             # fall back to displaying news from the origin country of the location
@@ -95,22 +107,21 @@ def fetch_weather_news(location):
         st.error("Error: Unable to fetch weather-related news.")
         return None
 
-
 def main():
     st.title("Weather Forecast App with OpenWeatherMap API")
-    
+
     # connection to OpenWeatherMap API
     connection = OpenWeatherMapConnection(api_key)
-    
+
     location = st.text_input("Enter a location (e.g., City name, Country name):",
-                                   help="Example: Mumbai, India or New York, USA")
-    
+                             help="Example: Mumbai, India or New York, USA")
+
     if st.button("Get Weather Forecast"):
         if location:
             # Fetch weather data
-            weather_data = connection.get_weather_data(location)  
+            weather_data = connection.get_weather_data(location)
             st.write(" ")
-            
+
             if weather_data:
                 # Display weather information
                 weather_info = {
@@ -122,7 +133,6 @@ def main():
                     "Weather Conditions": weather_data['weather'][0]['description'],
                 }
                 st.table(pd.DataFrame([weather_info]))
-
 
                 # Fetch weather-related news and display in a section
                 weather_news = fetch_weather_news(location)
@@ -139,21 +149,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# Future Scope
-
-#1. Forecast of Past, Present and Future
-#Im currently ussing OpenWeather API's free version, this feature is not able to use in free version.
-# # Function to fetch weather data for the previous and next days
-# def fetch_weather_data_range(location, days):
-#     connection = OpenWeatherMapConnection(api_key)
-#     weather_data_list = []
-#     for i in range(days):
-#         date = datetime.now() + timedelta(days=(i - days // 2))
-#         formatted_date = date.strftime("%Y-%m-%d")
-#         weather_data = connection.get_weather_data(location)
-#         if weather_data:
-#             weather_data['date'] = formatted_date
-#             weather_data_list.append(weather_data)
-#     return weather_data_list
-
