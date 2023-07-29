@@ -1,2 +1,4 @@
 .env
-weathersecrets.py
+secrets.toml
+.secrets.toml
+.streamlit
