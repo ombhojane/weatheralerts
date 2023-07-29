@@ -4,12 +4,13 @@ from datetime import datetime, timedelta
 import pandas as pd
 from dotenv import load_dotenv
 import os
+import weathersecrets
 
 # OpenWeatherMap API key (replace 'your_api_key' with your actual API key)
-api_key = os.getenv('weather')
+api_key = os.getenv('weather') or weathersecrets.weather
 
 # NewsAPI key (replace 'your_news_api_key' with your actual NewsAPI key)
-news_api_key = os.getenv('news')
+news_api_key = os.getenv('news') or weathersecrets.news
 
 # Load environment variables
 def configure():
