@@ -3,8 +3,11 @@ import requests
 from datetime import datetime, timedelta
 import pandas as pd
 
+
 # OpenWeatherMap API key (replace 'your_api_key' with your actual API key)
-api_key = 'bb34b4f6362247530f4b2091d0a18a9e'
+api_key = 'your_api_key'
+
+news_api_key = 'your_api_key'
 
 # Custom OpenWeatherMap connection class
 class OpenWeatherMapConnection:
@@ -54,10 +57,57 @@ weather_icons = {
     "Tornado": "🌪️"
 }
 
-# Function to set background image based on weather conditions
-def set_background_image(weather_condition):
-    # Implement your background image logic here based on weather conditions
-    pass
+# Function to fetch weather-related news
+def fetch_weather_news(location):
+    try:
+        # Set the news query based on the location and weather conditions
+        weather_data = OpenWeatherMapConnection(api_key).get_weather_data(location)
+        weather_condition = weather_data['weather'][0]['description']
+
+        # Use more general terms related to weather or natural disasters
+        news_query = f"Weather OR Storm OR Flood OR Hurricane OR Tornado OR {location}"
+
+        # Make API call to NewsAPI
+        news_url = f"https://newsapi.org/v2/everything?q={news_query}&apiKey={news_api_key}"
+        response = requests.get(news_url)
+        data = response.json()
+
+        # Extract relevant news articles from the response
+        if data['status'] == 'ok' and data['totalResults'] > 0:
+            articles = data['articles']
+            news = []
+            for article in articles[:5]:  # Display the top 5 news articles
+                title = article['title']
+                description = article['description']
+                url = article['url']
+                news.append([title, description, url])
+            return news
+
+        else:
+            # If specific weather-related news is not available for the given location,
+            # fall back to displaying news from the origin country of the location
+            origin_country = weather_data['sys']['country']
+            news_query_origin_country = f"Weather OR Storm OR Flood OR Hurricane OR Tornado OR {origin_country}"
+            news_url_origin_country = f"https://newsapi.org/v2/everything?q={news_query_origin_country}&apiKey={news_api_key}"
+            response_origin_country = requests.get(news_url_origin_country)
+            data_origin_country = response_origin_country.json()
+
+            if data_origin_country['status'] == 'ok' and data_origin_country['totalResults'] > 0:
+                articles_origin_country = data_origin_country['articles']
+                news = []
+                for article in articles_origin_country[:5]:  # Display the top 5 news articles
+                    title = article['title']
+                    description = article['description']
+                    url = article['url']
+                    news.append([title, description, url])
+                return news
+            else:
+                return None
+
+    except requests.exceptions.RequestException as e:
+        st.error("Error: Unable to fetch weather-related news.")
+        return None
+
 
 # Main app
 def main():
@@ -89,10 +139,16 @@ def main():
                 }
                 st.table(pd.DataFrame([weather_info]))
 
-                # Set background image based on weather conditions
-                weather_condition = weather_data['weather'][0]['description']
-                set_background_image(weather_condition)
 
+                # Fetch weather-related news and display in a section
+                weather_news = fetch_weather_news(location)
+                if weather_news:
+                    st.subheader("Weather-Related News")
+                    for news_item in weather_news:
+                        st.write(f"**{news_item[0]}**")
+                        st.write(news_item[1])
+                        st.write(f"[Read More]({news_item[2]})")
+                        st.markdown("---")
 
             else:
                 st.warning("No weather data found for the given location.")
